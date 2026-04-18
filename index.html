@@ -973,6 +973,7 @@ function checkGelirSifre(){
   const s = document.getElementById('gelirSifre').value;
   if(s === 'Yusuf*11020'){
     gelirAcik = true;
+    rakamlarGoster = false;
     closeM('mGelirSifre');
     _swGelir();
   } else {
@@ -987,6 +988,7 @@ function _swGelir(){
   document.getElementById('screen-gelir').classList.add('active');
   document.getElementById('tab-gelir').classList.add('active');
   document.getElementById('nav-gelir').classList.add('active');
+  rakamlarGoster = false; // her girişte gizle
   renderGelir('gun');
 }
 
@@ -1046,7 +1048,7 @@ function renderGelir(period){
             <div style="flex:1;background:var(--surface2);border-radius:4px;overflow:hidden;height:20px;">
               <div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--green));width:${Math.round(data.toplam/maxVal*100)}%;border-radius:4px;transition:width 0.5s;"></div>
             </div>
-            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);width:80px;text-align:right;">₺${data.toplam.toLocaleString('tr-TR')}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);width:80px;text-align:right;"><span class="gizli-rakam" data-val="₺${data.toplam.toLocaleString('tr-TR')}">🔒</span></div>
             <div style="font-size:10px;color:var(--text3);width:30px;text-align:right;">${data.adet} iş</div>
           </div>`).join('')}
       </div>` : '';
@@ -1063,10 +1065,14 @@ function renderGelir(period){
           <div style="font-size:10px;color:var(--text3);margin-top:2px;">🕐 ${dStr(r.completedAt)}</div>
           ${r.teslimEden?`<div style="font-size:10px;color:var(--green);margin-top:1px;">👤 ${r.teslimEden}</div>`:''}
         </div>
-        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--accent2);">${r.price?'₺'+parseFloat(r.price).toLocaleString('tr-TR'):'—'}</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--accent2);"><span class="gizli-rakam" data-val="${r.price?'₺'+parseFloat(r.price).toLocaleString('tr-TR'):'—'}">🔒 **</span></div>
       </div>`).join('')}` : `<div class="es"><div class="ei">💸</div><div class="et">Bu dönemde kayıt yok</div></div>`;
 
   document.getElementById('gelirContent').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;">💰 Gelir Raporu</div>
+      <button onclick="toggleRakamlar()" id="rakamBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">👁 Göster</button>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
       ${['gun','hafta','ay','yil','tumü'].map(p=>`
         <button onclick="renderGelir('${p}')" style="flex:1;min-width:0;padding:8px 4px;border-radius:9px;border:1px solid ${p===period?'var(--accent)':'var(--border)'};background:${p===period?'rgba(0,212,255,0.1)':'var(--surface2)'};color:${p===period?'var(--accent)':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${p==='gun'?'Bugün':p==='hafta'?'Hafta':p==='ay'?'Ay':p==='yil'?'Yıl':'Tümü'}</button>`).join('')}
@@ -1077,15 +1083,21 @@ function renderGelir(period){
       <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">${subtitle}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
         <div style="text-align:center;">
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent2);">₺${toplam.toLocaleString('tr-TR',{maximumFractionDigits:0})}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent2);">
+            <span class="gizli-rakam" data-val="₺${toplam.toLocaleString('tr-TR',{maximumFractionDigits:0})}">🔒 ****</span>
+          </div>
           <div style="font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Toplam Gelir</div>
         </div>
         <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);">
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--green);">${adet}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--green);">
+            <span class="gizli-rakam" data-val="${adet}">🔒</span>
+          </div>
           <div style="font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Teslim</div>
         </div>
         <div style="text-align:center;">
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent);">₺${Math.round(ortalama).toLocaleString('tr-TR')}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent);">
+            <span class="gizli-rakam" data-val="₺${Math.round(ortalama).toLocaleString('tr-TR')}">🔒 ****</span>
+          </div>
           <div style="font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Ortalama</div>
         </div>
       </div>
@@ -1094,6 +1106,23 @@ function renderGelir(period){
     ${gunlukHTML}
     ${listeHTML}
   `;
+}
+
+// ===== RAKAM GÖSTER/GİZLE =====
+let rakamlarGoster = false;
+
+function toggleRakamlar(){
+  rakamlarGoster = !rakamlarGoster;
+  const btn = document.getElementById('rakamBtn');
+  if(btn) btn.textContent = rakamlarGoster ? '🙈 Gizle' : '👁 Göster';
+  document.querySelectorAll('.gizli-rakam').forEach(el=>{
+    if(rakamlarGoster){
+      el.textContent = el.dataset.val;
+      el.style.color = '';
+    } else {
+      el.textContent = '🔒 ****';
+    }
+  });
 }
 
 // ===== PHOTO LIGHTBOX =====
