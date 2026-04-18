@@ -313,6 +313,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </div>
     <div class="fg"><label class="fl">Telefon</label><input class="fi" id="fPhone" placeholder="05xx..." type="tel"></div>
     <div class="fg"><label class="fl">Cihaz *</label><input class="fi" id="fDevice" placeholder="iPhone 15, Samsung TV..."></div>
+    <div class="fg">
+      <label class="fl">Cihaz Fotoğrafları</label>
+      <div id="photoPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+      <label for="fPhotos" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:11px;padding:14px;cursor:pointer;font-size:13px;color:var(--text2);transition:all 0.2s;">
+        <span style="font-size:20px;">📷</span> Fotoğraf Ekle (Çek veya Galeriden Seç)
+      </label>
+      <input type="file" id="fPhotos" accept="image/*" multiple capture="environment" style="display:none;" onchange="previewPhotos(event)">
+    </div>
     <div class="frow">
       <div class="fg"><label class="fl">Seri / IMEI</label><input class="fi" id="fSerial" placeholder="Opsiyonel"></div>
       <div class="fg"><label class="fl">Pin / Parola</label><input class="fi" id="fPin" placeholder="Opsiyonel"></div>
@@ -401,15 +409,17 @@ function dDiff(ts){return ts?Math.floor((Date.now()-Number(ts))/86400000):0;}
 function fromDB(r){
   let gecmis=[];
   try{ gecmis=typeof r.gecmis==='string'?JSON.parse(r.gecmis):(r.gecmis||[]); }catch(e){}
+  let photos=[]; try{photos=typeof r.photos==='string'?JSON.parse(r.photos):(r.photos||[]);}catch(e){}
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
     desc:r.description||'',price:r.price||'',priority:r.priority||'orta',status:r.status||'bekliyor',
-    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis};
+    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos};
 }
 function toDB(r){
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
     description:r.desc||'',price:r.price||'',priority:r.priority||'orta',status:r.status,
     notes:r.notes||'',created_at:r.createdAt,updated_at:r.updatedAt,completed_at:r.completedAt||null,
-    gecmis:JSON.stringify(r.gecmis||[])};
+    gecmis:JSON.stringify(r.gecmis||[]),
+    photos:JSON.stringify(r.photos||[])};
 }
 
 // GEÇMİŞ KAYDI
@@ -531,6 +541,9 @@ function openNew(){
   document.getElementById('mTitle').textContent='Yeni Servis Kaydı';
   document.getElementById('saveBtn').textContent='💾 Kaydet';
   ['fName','fSurname','fPhone','fDevice','fSerial','fPin','fDesc','fPrice','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fPhotos').value='';
+  document.getElementById('photoPreview').innerHTML='';
+  window._pendingPhotos=[];
   document.getElementById('fPriority').value='orta';
   document.getElementById('fStatus').value='bekliyor';
   openM('mNew');
@@ -591,7 +604,18 @@ async function saveRec(){
     }
   }
   try{
+    // Önce kaydı oluştur
     await sbUpsert(toDB(rec));
+    // Fotoğrafları yükle
+    const pendingFiles = window._pendingPhotos||[];
+    if(pendingFiles.length>0){
+      showLoading('Fotoğraflar yükleniyor...');
+      const urls = await uploadPhotos(rec.id, pendingFiles);
+      rec.photos = [...(rec.photos||[]), ...urls];
+      await sbUpsert(toDB(rec));
+      window._pendingPhotos=[];
+      document.getElementById('photoPreview').innerHTML='';
+    }
     await loadData();
     hideLoading();
     toast(editId?'✅ Kayıt güncellendi':'✅ Kayıt oluşturuldu');
@@ -660,6 +684,17 @@ function openDetail(id){
 
     ${r.desc?`<div class="dsec"><div class="dst">Arıza Açıklaması</div><div style="font-size:12px;line-height:1.6;background:var(--surface2);border-radius:9px;padding:11px;border:1px solid var(--border);">${r.desc}</div></div>`:''}
     ${r.notes?`<div class="dsec"><div class="dst">İç Notlar</div><div style="font-size:12px;color:var(--text2);line-height:1.6;background:var(--surface2);border-radius:9px;padding:11px;border:1px solid var(--border);">${r.notes}</div></div>`:''}
+    ${(r.photos&&r.photos.length>0)?`
+    <div class="dsec">
+      <div class="dst">📷 Cihaz Fotoğrafları (${r.photos.length})</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        ${r.photos.map(url=>`
+          <div style="position:relative;">
+            <img src="${url}" onclick="openPhoto('${url}')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer;">
+            <div onclick="deletePhoto('${url}','${r.id}')" style="position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(255,77,109,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:white;font-weight:bold;">×</div>
+          </div>`).join('')}
+      </div>
+    </div>`:''}
 
     <div class="dsec">
       <div class="dst">Tarihler</div>
@@ -746,6 +781,81 @@ function toast(msg){
 document.querySelectorAll('.mo').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
+
+// ===== PHOTOS =====
+window._pendingPhotos = [];
+
+function previewPhotos(event){
+  const files = Array.from(event.target.files);
+  window._pendingPhotos = [...(window._pendingPhotos||[]), ...files];
+  const preview = document.getElementById('photoPreview');
+  preview.innerHTML = '';
+  window._pendingPhotos.forEach((file,i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:relative;width:80px;height:80px;';
+      div.innerHTML = `
+        <img src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--border);">
+        <div onclick="removePhoto(${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:white;font-weight:bold;">×</div>
+      `;
+      preview.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removePhoto(idx){
+  window._pendingPhotos.splice(idx,1);
+  // retrigger preview
+  const dt = new DataTransfer();
+  window._pendingPhotos.forEach(f => dt.items.add(f));
+  document.getElementById('fPhotos').files = dt.files;
+  previewPhotos({target:{files:dt.files}});
+  // reset pending since previewPhotos will re-add
+  setTimeout(()=>{ window._pendingPhotos = Array.from(document.getElementById('fPhotos').files); },50);
+}
+
+async function uploadPhotos(recId, files){
+  const urls = [];
+  for(const file of files){
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${recId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const r = await fetch(`${SUPA_URL}/storage/v1/object/cihaz-fotograflari/${path}`,{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(currentSession?.access_token||SUPA_KEY),'Content-Type':file.type},
+      body:file
+    });
+    if(r.ok){
+      urls.push(`${SUPA_URL}/storage/v1/object/public/cihaz-fotograflari/${path}`);
+    }
+  }
+  return urls;
+}
+
+async function deletePhoto(url, recId){
+  if(!confirm('Bu fotoğrafı silmek istediğinizden emin misiniz?')) return;
+  const r = recs.find(x=>x.id===recId); if(!r) return;
+  const path = url.split('cihaz-fotograflari/')[1];
+  await fetch(`${SUPA_URL}/storage/v1/object/cihaz-fotograflari/${path}`,{
+    method:'DELETE',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(currentSession?.access_token||SUPA_KEY)}
+  });
+  r.photos = (r.photos||[]).filter(u=>u!==url);
+  await sbUpsert({...toDB(r), photos: JSON.stringify(r.photos)});
+  await loadData();
+  openDetail(recId);
+  toast('🗑️ Fotoğraf silindi');
+}
+
+// ===== PHOTO LIGHTBOX =====
+function openPhoto(url){
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  overlay.innerHTML=`<img src="${url}" style="max-width:95%;max-height:90dvh;object-fit:contain;border-radius:12px;">`;
+  overlay.onclick=()=>document.body.removeChild(overlay);
+  document.body.appendChild(overlay);
+}
 
 // ===== AUTH =====
 let currentSession = null;
