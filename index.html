@@ -182,6 +182,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 /* NOT EKLEME */
 .note-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:10px 13px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:none;height:70px;margin-bottom:8px;}
 .note-input:focus{border-color:var(--accent2);}
+
+@media print {
+  body * { visibility: hidden !important; }
+  #fisEkrani, #fisEkrani * { visibility: visible !important; }
+  #fisEkrani { position: fixed !important; inset: 0 !important; background: white !important; z-index: 9999 !important; padding: 0 !important; }
+  .fis-kapat { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -417,6 +424,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div class="fg"><label class="fl">Not</label><textarea class="note-input" id="noteText" placeholder="Yapılan işlem, eklenen parça, müşteri görüşmesi..."></textarea></div>
     <button class="btnp" onclick="saveNote()" style="background:linear-gradient(135deg,var(--accent2),#cc4400);">📝 Notu Kaydet</button>
     <button class="btnp btns" onclick="closeM('mNote')" style="margin-top:7px;">İptal</button>
+  </div>
+</div>
+
+<!-- FİŞ EKRANI -->
+<div id="fisEkrani" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:998;overflow-y:auto;padding:20px;">
+  <div style="max-width:480px;margin:0 auto;">
+    <div id="fisIcerik" style="background:white;padding:24px;font-family:Arial,sans-serif;font-size:13px;color:#000;"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="fis-kapat" onclick="document.getElementById('fisEkrani').style.display='none'" style="flex:1;padding:12px;background:#333;color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;">✕ Kapat</button>
+      <button class="fis-kapat" onclick="window.print()" style="flex:2;padding:12px;background:#000;color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;">🖨️ Yazdır</button>
+    </div>
   </div>
 </div>
 
@@ -775,6 +793,7 @@ function openDetail(id){
       <button class="sab" onclick="openNoteModal('${r.id}')" style="border-color:var(--accent2);color:var(--accent2);">📝 Not Ekle</button>
       <button class="sab" onclick="openEdit('${r.id}')" style="border-color:var(--accent);color:var(--accent);">✏️ Düzenle</button>
     </div>
+    <button class="sab" onclick="yazdir('${r.id}')" style="width:100%;margin-bottom:7px;border-color:var(--text2);color:var(--text2);">🖨️ Teslim Alım Fişi Yazdır</button>
     <button class="sab danger" onclick="delRec('${r.id}')" style="width:100%;margin-bottom:7px;">🗑️ Kaydı Sil</button>
     <button class="btnp btns" onclick="closeM('mDetail')">Kapat</button>
   `;
@@ -1123,6 +1142,80 @@ function toggleRakamlar(){
       el.textContent = '🔒 ****';
     }
   });
+}
+
+// ===== YAZDIR =====
+function yazdir(id){
+  const r = recs.find(x=>x.id===id); if(!r) return;
+  closeM('mDetail');
+
+  const simdi = new Date().toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const alinmaTarihi = r.createdAt ? new Date(Number(r.createdAt)).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  const statusTR = {bekliyor:'Bekliyor',tamiridevam:'Tamirde',hazir:'Hazır',teslim:'Teslim Edildi'};
+
+  document.getElementById('fisIcerik').innerHTML = `
+    <div style="border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:20px;font-weight:900;letter-spacing:-0.5px;">GÜVEN BİLGİSAYAR</div>
+          <div style="font-size:11px;color:#555;margin-top:2px;">Teknik Servis Teslim Alım Fişi</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:#555;">Fiş No</div>
+          <div style="font-size:16px;font-weight:bold;">#${String(r.id).slice(-7)}</div>
+        </div>
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+      <tr>
+        <td style="padding:5px 0;font-size:11px;color:#555;width:120px;">Tarih / Saat</td>
+        <td style="padding:5px 0;font-size:12px;font-weight:bold;">${alinmaTarihi}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 0;font-size:11px;color:#555;">Müşteri Adı</td>
+        <td style="padding:5px 0;font-size:12px;font-weight:bold;">${r.name}</td>
+      </tr>
+      ${r.phone ? `<tr><td style="padding:5px 0;font-size:11px;color:#555;">Telefon</td><td style="padding:5px 0;font-size:12px;">${r.phone}</td></tr>` : ''}
+    </table>
+
+    <div style="border-top:1px dashed #ccc;border-bottom:1px dashed #ccc;padding:10px 0;margin-bottom:12px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:5px 0;font-size:11px;color:#555;width:120px;">Cihaz</td>
+          <td style="padding:5px 0;font-size:12px;font-weight:bold;">${r.device}</td>
+        </tr>
+        ${r.serial ? `<tr><td style="padding:5px 0;font-size:11px;color:#555;">Seri / IMEI</td><td style="padding:5px 0;font-size:12px;font-family:monospace;">${r.serial}</td></tr>` : ''}
+        <tr>
+          <td style="padding:5px 0;font-size:11px;color:#555;">Arıza</td>
+          <td style="padding:5px 0;font-size:12px;">${r.desc || '—'}</td>
+        </tr>
+        ${r.price ? `<tr><td style="padding:5px 0;font-size:11px;color:#555;">Tahmini Ücret</td><td style="padding:5px 0;font-size:13px;font-weight:bold;">₺${parseFloat(r.price).toLocaleString('tr-TR')}</td></tr>` : ''}
+        <tr>
+          <td style="padding:5px 0;font-size:11px;color:#555;">Durum</td>
+          <td style="padding:5px 0;font-size:12px;font-weight:bold;">${statusTR[r.status]||r.status}</td>
+        </tr>
+        ${r.tamirci ? `<tr><td style="padding:5px 0;font-size:11px;color:#555;">Tamiri Yapan</td><td style="padding:5px 0;font-size:12px;font-weight:bold;">${r.tamirci}</td></tr>` : ''}
+      </table>
+    </div>
+
+    ${r.notes ? `<div style="margin-bottom:12px;"><div style="font-size:11px;color:#555;margin-bottom:4px;">Notlar:</div><div style="font-size:12px;padding:8px;background:#f5f5f5;border-radius:4px;">${r.notes}</div></div>` : ''}
+
+    <div style="display:flex;gap:16px;margin-top:16px;padding-top:12px;border-top:1px solid #ddd;">
+      <div style="flex:1;text-align:center;">
+        <div style="border-top:1px solid #000;padding-top:6px;margin-top:40px;font-size:11px;color:#555;">Teslim Eden (Müşteri)</div>
+      </div>
+      <div style="flex:1;text-align:center;">
+        <div style="border-top:1px solid #000;padding-top:6px;margin-top:40px;font-size:11px;color:#555;">Teslim Alan (Yetkili)</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:14px;font-size:10px;color:#999;border-top:1px dashed #ddd;padding-top:8px;">
+      Fiş tarihi: ${simdi} — GüvenBilgisayar Teknik Servis
+    </div>
+  `;
+
+  document.getElementById('fisEkrani').style.display='block';
 }
 
 // ===== PHOTO LIGHTBOX =====
