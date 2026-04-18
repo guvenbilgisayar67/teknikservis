@@ -203,8 +203,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;">
       <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:20px;">🔐 Giriş Yap</div>
       <div style="margin-bottom:14px;">
-        <label style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;">E-posta</label>
-        <input id="loginEmail" type="email" placeholder="email@example.com" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+        <label style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;">Kullanıcı Adı</label>
+        <input id="loginUser" type="text" placeholder="Kullanıcı adınız..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
       </div>
       <div style="margin-bottom:20px;">
         <label style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;">Parola</label>
@@ -250,6 +250,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div class="tab" onclick="sw('musteriler')" id="tab-musteriler"><span class="ti">👥</span>Müşteriler</div>
     <div class="tab" onclick="sw('panel')" id="tab-panel"><span class="ti">📊</span>Panel</div>
     <div class="tab" onclick="swGelir()" id="tab-gelir"><span class="ti">💰</span>Gelir</div>
+    <div class="tab" onclick="swAyarlar()" id="tab-ayarlar"><span class="ti">⚙️</span>Ayarlar</div>
   </div>
 
   <div class="content">
@@ -299,6 +300,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       <div class="stitle">Son Aktiviteler</div>
       <div id="recentAct"></div>
     </div>
+  <!-- AYARLAR EKRANI -->
+    <div class="screen" id="screen-ayarlar">
+      <div id="ayarlarContent"></div>
+    </div>
+
   <!-- GELİR EKRANI -->
     <div class="screen" id="screen-gelir">
       <div id="gelirContent"></div>
@@ -312,6 +318,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div class="ni" onclick="sw('musteriler')" id="nav-musteriler"><span class="ico">👥</span>Müşteriler</div>
     <div class="ni" onclick="sw('panel')" id="nav-panel"><span class="ico">📊</span>Panel</div>
     <div class="ni" onclick="swGelir()" id="nav-gelir"><span class="ico">💰</span>Gelir</div>
+    <div class="ni" onclick="swAyarlar()" id="nav-ayarlar"><span class="ico">⚙️</span>Ayarlar</div>
   </div>
 </div>
 
@@ -1218,6 +1225,94 @@ function yazdir(id){
   document.getElementById('fisEkrani').style.display='block';
 }
 
+// ===== AYARLAR =====
+let ayarlarAcik = false;
+const AYARLAR_SIFRE = 'Yusuf*11020';
+
+function swAyarlar(){
+  if(!ayarlarAcik){
+    const s = prompt('🔐 Ayarlara erişmek için şifre:');
+    if(!s) return;
+    if(s !== AYARLAR_SIFRE){ toast('❌ Yanlış şifre!'); return; }
+    ayarlarAcik = true;
+  }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab,.ni').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-ayarlar').classList.add('active');
+  document.getElementById('tab-ayarlar').classList.add('active');
+  document.getElementById('nav-ayarlar').classList.add('active');
+  renderAyarlar();
+}
+
+async function renderAyarlar(){
+  const r = await fetch(`${SUPA_URL}/rest/v1/kullanicilar?order=created_at.asc`,{headers:H});
+  const kullanicilar = await r.json();
+
+  document.getElementById('ayarlarContent').innerHTML = `
+    <div class="stitle">👥 Kullanıcı Yönetimi <span class="nbadge">${kullanicilar.length}</span></div>
+    <div style="margin-bottom:16px;">
+      ${kullanicilar.map(k=>`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:11px;background:${k.rol==='admin'?'linear-gradient(135deg,var(--accent),#0099cc)':'linear-gradient(135deg,var(--surface2),var(--border))'};display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:${k.rol==='admin'?'#0a0f14':'var(--text2)'};">
+            ${k.kullanici_adi[0]}
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;">${k.kullanici_adi}</div>
+            <div style="font-size:11px;color:${k.rol==='admin'?'var(--accent)':'var(--text2)'};margin-top:2px;">${k.rol==='admin'?'👑 Yönetici':'👤 Kullanıcı'}</div>
+          </div>
+          ${k.rol!=='admin'?`<button onclick="kullaniciSil('${k.id}','${k.kullanici_adi}')" style="background:rgba(255,77,109,0.1);border:1px solid var(--red);border-radius:8px;padding:6px 10px;color:var(--red);font-size:11px;cursor:pointer;">Sil</button>`:''}
+        </div>`).join('')}
+    </div>
+
+    <div class="stitle">➕ Yeni Kullanıcı Ekle</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;">
+      <div class="fg">
+        <label class="fl">Kullanıcı Adı</label>
+        <input class="fi" id="yeniKullanici" placeholder="Kullanıcı adı..." style="text-transform:uppercase;">
+      </div>
+      <div class="fg">
+        <label class="fl">Şifre</label>
+        <input class="fi" id="yeniSifre" placeholder="Şifre...">
+      </div>
+      <div class="fg">
+        <label class="fl">Rol</label>
+        <select class="fs" id="yeniRol">
+          <option value="kullanici">👤 Kullanıcı</option>
+          <option value="admin">👑 Yönetici</option>
+        </select>
+      </div>
+      <button class="btnp" onclick="kullaniciEkle()">➕ Kullanıcı Ekle</button>
+    </div>
+  `;
+}
+
+async function kullaniciEkle(){
+  const ad = document.getElementById('yeniKullanici').value.trim().toUpperCase();
+  const sifre = document.getElementById('yeniSifre').value.trim();
+  const rol = document.getElementById('yeniRol').value;
+  if(!ad||!sifre){toast('⚠️ Ad ve şifre zorunlu!');return;}
+  const yeni = {id:'usr_'+Date.now(),kullanici_adi:ad,sifre,rol,created_at:Date.now()};
+  const r = await fetch(`${SUPA_URL}/rest/v1/kullanicilar`,{
+    method:'POST',
+    headers:{...H,'Prefer':'resolution=merge-duplicates'},
+    body:JSON.stringify(yeni)
+  });
+  if(r.ok||r.status===201||r.status===200){
+    toast('✅ '+ad+' eklendi');
+    renderAyarlar();
+  } else {
+    const err = await r.text();
+    toast('❌ Hata: '+(err.includes('unique')?'Bu kullanıcı adı zaten var!':err));
+  }
+}
+
+async function kullaniciSil(id, ad){
+  if(!confirm(ad+' kullanıcısını silmek istediğinizden emin misiniz?'))return;
+  const r = await fetch(`${SUPA_URL}/rest/v1/kullanicilar?id=eq.${id}`,{method:'DELETE',headers:H});
+  if(r.ok){toast('🗑️ '+ad+' silindi');renderAyarlar();}
+  else toast('❌ Silme hatası');
+}
+
 // ===== PHOTO LIGHTBOX =====
 function openPhoto(url){
   const overlay = document.createElement('div');
@@ -1228,34 +1323,31 @@ function openPhoto(url){
 }
 
 // ===== AUTH =====
-let currentSession = null;
+let currentUser = null;
 
 async function doLogin(){
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const errEl = document.getElementById('loginError');
+  const kullanici = document.getElementById('loginUser').value.trim().toUpperCase();
+  const sifre = document.getElementById('loginPass').value.trim();
   const btn = document.getElementById('loginBtn');
-  if(!email||!pass){showLoginError('E-posta ve parola gerekli!');return;}
+  if(!kullanici||!sifre){showLoginError('Kullanıcı adı ve şifre gerekli!');return;}
   btn.textContent='⏳ Giriş yapılıyor...';btn.disabled=true;
-  errEl.style.display='none';
+  document.getElementById('loginError').style.display='none';
   try{
-    const r = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
-      body:JSON.stringify({email,password:pass})
+    const r = await fetch(`${SUPA_URL}/rest/v1/kullanicilar?kullanici_adi=eq.${encodeURIComponent(kullanici)}&sifre=eq.${encodeURIComponent(sifre)}`,{
+      headers:{...H}
     });
     const data = await r.json();
-    if(data.access_token){
-      currentSession = data;
-      // Override auth header with user token
-      H['Authorization'] = 'Bearer ' + data.access_token;
+    if(data && data.length>0){
+      currentUser = data[0];
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('loadingScreen').style.display='flex';
+      // Üstteki kullanıcı adını güncelle
+      document.querySelector('.logo').innerHTML = 'GÜVEN<span style="color:var(--accent)">BİLGİSAYAR</span> <span class="badge">● '+currentUser.kullanici_adi+'</span>';
       await loadData();
       document.getElementById('loadingScreen').style.display='none';
       document.getElementById('app').style.display='flex';
     } else {
-      showLoginError('E-posta veya parola hatalı!');
+      showLoginError('Kullanıcı adı veya şifre hatalı!');
       btn.textContent='Giriş Yap';btn.disabled=false;
     }
   }catch(e){
@@ -1266,23 +1358,24 @@ async function doLogin(){
 
 function showLoginError(msg){
   const el = document.getElementById('loginError');
-  el.textContent = '⚠️ ' + msg;
+  el.textContent='⚠️ '+msg;
   el.style.display='block';
 }
 
 function doLogout(){
   if(!confirm('Çıkış yapmak istiyor musunuz?'))return;
-  currentSession = null;
-  H['Authorization'] = 'Bearer ' + SUPA_KEY;
+  currentUser=null;
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('loginEmail').value='';
+  document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
   document.getElementById('loginBtn').textContent='Giriş Yap';
   document.getElementById('loginBtn').disabled=false;
   document.getElementById('loginError').style.display='none';
   toast('👋 Çıkış yapıldı');
 }
+
+function isAdmin(){return currentUser && currentUser.rol==='admin';}
 
 // ===== INIT =====
 async function init(){
