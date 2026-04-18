@@ -545,7 +545,7 @@ function renderCards(list,q=''){
         ${(r.gecmis||[]).length>0?`<div class="mtag">📋 ${r.gecmis.length} işlem</div>`:''}
       </div>
       ${r.desc?`<div style="font-size:11px;color:var(--text2);margin-top:7px;line-height:1.4;">${String(r.desc).substring(0,70)}${String(r.desc).length>70?'…':''}</div>`:''}
-      <div class="cfoot"><div class="cprice">🔒 ****</div><div class="cdate">${dStrShort(r.createdAt)}</div></div>
+      <div class="cfoot"><div class="cprice">${r.price?'₺'+parseFloat(r.price).toLocaleString('tr-TR'):'—'}</div><div class="cdate">${dStrShort(r.createdAt)}</div></div>
     </div>`).join('');
 }
 
@@ -725,7 +725,7 @@ function openDetail(id){
     <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="sbadge ${r.status}" style="font-size:11px;padding:5px 10px;">${SI[r.status]} ${SL[r.status]}</div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;">${PL[r.priority||'orta']}</div>
-      ${r.price?`<div style="background:rgba(255,107,53,0.1);border:1px solid var(--accent2);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--accent2);">💰 🔒 ****</div>`:''}
+      ${r.price?`<div style="background:rgba(255,107,53,0.1);border:1px solid var(--accent2);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--accent2);">💰 ₺${parseFloat(r.price).toLocaleString('tr-TR')}</div>`:''}
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text2);">⏱ ${dDiff(r.createdAt)} gün</div>
     </div>
 
