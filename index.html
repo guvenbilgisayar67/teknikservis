@@ -355,6 +355,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <div class="modal"><div id="detailContent"></div></div>
 </div>
 
+<!-- TAMİRCİ MODAL -->
+<div class="mo" id="mTamir">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <div class="mtitle">⚙️ Tamire Alınıyor</div>
+    <div class="fg">
+      <label class="fl">Tamiri Yapacak Kişi</label>
+      <input class="fi" id="tamirciAdi" placeholder="Teknisyen adı...">
+    </div>
+    <button class="btnp" onclick="confirmTamir()" style="background:linear-gradient(135deg,var(--accent),#0099cc);">⚙️ Tamire Al</button>
+    <button class="btnp btns" onclick="closeM('mTamir')" style="margin-top:7px;">İptal</button>
+  </div>
+</div>
+
 <!-- NOT EKLE MODAL -->
 <div class="mo" id="mNote">
   <div class="modal">
@@ -412,14 +426,15 @@ function fromDB(r){
   let photos=[]; try{photos=typeof r.photos==='string'?JSON.parse(r.photos):(r.photos||[]);}catch(e){}
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
     desc:r.description||'',price:r.price||'',priority:r.priority||'orta',status:r.status||'bekliyor',
-    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos};
+    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos,tamirci:r.tamirci||''};
 }
 function toDB(r){
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
     description:r.desc||'',price:r.price||'',priority:r.priority||'orta',status:r.status,
     notes:r.notes||'',created_at:r.createdAt,updated_at:r.updatedAt,completed_at:r.completedAt||null,
     gecmis:JSON.stringify(r.gecmis||[]),
-    photos:JSON.stringify(r.photos||[])};
+    photos:JSON.stringify(r.photos||[]),
+    tamirci:r.tamirci||''};
 }
 
 // GEÇMİŞ KAYDI
@@ -680,6 +695,7 @@ function openDetail(id){
       <div class="dr"><span class="dk">Cihaz</span><span class="dv">${r.device}</span></div>
       ${r.serial?`<div class="dr"><span class="dk">Seri/IMEI</span><span class="dv" style="font-family:'DM Mono',monospace;font-size:11px;">${r.serial}</span></div>`:''}
       ${r.pin?`<div class="dr"><span class="dk">Pin/Parola</span><span class="dv">${r.pin}</span></div>`:''}
+      ${r.tamirci?`<div class="dr"><span class="dk">🔧 Tamiri Yapan</span><span class="dv" style="color:var(--accent);font-weight:700;">${r.tamirci}</span></div>`:''}
     </div>
 
     ${r.desc?`<div class="dsec"><div class="dst">Arıza Açıklaması</div><div style="font-size:12px;line-height:1.6;background:var(--surface2);border-radius:9px;padding:11px;border:1px solid var(--border);">${r.desc}</div></div>`:''}
@@ -723,14 +739,39 @@ function openDetail(id){
   openM('mDetail');
 }
 
+let _pendingStatusId=null, _pendingStatus=null;
+
 async function chStatus(id,status){
   const r=recs.find(x=>x.id===id);if(!r)return;
   if(r.status===status){toast('Zaten bu durumda!');return;}
-  closeM('mDetail');showLoading('Durum güncelleniyor...');
+  // Tamire alınıyorsa teknisyen adı sor
+  if(status==='tamiridevam'){
+    _pendingStatusId=id;
+    _pendingStatus=status;
+    closeM('mDetail');
+    document.getElementById('tamirciAdi').value='';
+    openM('mTamir');
+    return;
+  }
+  await applyStatus(id,status,'');
+}
+
+async function confirmTamir(){
+  const tamirci=document.getElementById('tamirciAdi').value.trim();
+  if(!tamirci){toast('⚠️ Teknisyen adı zorunlu!');return;}
+  closeM('mTamir');
+  await applyStatus(_pendingStatusId,_pendingStatus,tamirci);
+}
+
+async function applyStatus(id,status,tamirci){
+  const r=recs.find(x=>x.id===id);if(!r)return;
+  showLoading('Durum güncelleniyor...');
   const now=Date.now();
   const updated={...r,status,updatedAt:now,gecmis:[...(r.gecmis||[])]};
   if(status==='teslim'&&!r.completedAt)updated.completedAt=now;
-  addHistory(updated,'durum',statusAciklama(status),r.status);
+  if(tamirci) updated.tamirci=tamirci;
+  const desc=tamirci?statusAciklama(status)+' — Teknisyen: '+tamirci:statusAciklama(status);
+  addHistory(updated,'durum',desc,r.status);
   try{
     await sbUpsert(toDB(updated));
     await loadData();hideLoading();
@@ -760,6 +801,9 @@ async function saveNote(){
 }
 
 async function delRec(id){
+  const sifre = prompt('🔐 Silme işlemi için yönetici şifresi:');
+  if(sifre === null) return;
+  if(sifre !== 'Yusuf*11020'){toast('❌ Yanlış şifre!');return;}
   if(!confirm('Bu kaydı silmek istediğinizden emin misiniz?'))return;
   closeM('mDetail');showLoading('Siliniyor...');
   try{
