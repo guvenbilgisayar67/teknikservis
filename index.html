@@ -234,7 +234,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       <div class="sc a"><div class="n" id="st-act">0</div><div class="l">Tamirde</div></div>
       <div class="sc w"><div class="n" id="st-wait">0</div><div class="l">Bekliyor</div></div>
       <div class="sc g"><div class="n" id="st-ready">0</div><div class="l">Hazır</div></div>
-      <div class="sc r"><div class="n" id="st-rev">₺0</div><div class="l">Gelir</div></div>
+
     </div>
   </div>
 
@@ -278,7 +278,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
         <div class="dc"><div class="di">📋</div><div class="dn" id="d-total" style="color:var(--text)">0</div><div class="dl">Toplam İş</div></div>
         <div class="dc"><div class="di">⚙️</div><div class="dn" id="d-act" style="color:var(--accent)">0</div><div class="dl">Aktif</div></div>
         <div class="dc"><div class="di">✅</div><div class="dn" id="d-done" style="color:var(--green)">0</div><div class="dl">Tamamlanan</div></div>
-        <div class="dc"><div class="di">💰</div><div class="dn" id="d-rev" style="color:var(--accent2)">₺0</div><div class="dl">Toplam Gelir</div></div>
+
         <div class="dc full">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <div><div class="dn" id="d-avg" style="color:var(--yellow);font-size:20px">0g</div><div class="dl">Ort. Tamamlanma</div></div>
@@ -509,11 +509,11 @@ function upStats(){
   document.getElementById('st-act').textContent=act;
   document.getElementById('st-wait').textContent=wait;
   document.getElementById('st-ready').textContent=rdy;
-  document.getElementById('st-rev').textContent='🔒';
+
   document.getElementById('d-total').textContent=n;
   document.getElementById('d-act').textContent=act+wait;
   document.getElementById('d-done').textContent=done;
-  document.getElementById('d-rev').textContent='🔒';
+
   const comp=recs.filter(r=>r.status==='teslim'&&r.completedAt);
   const avg=comp.length?Math.round(comp.reduce((s,r)=>s+dDiff(r.createdAt),0)/comp.length):0;
   document.getElementById('d-avg').textContent=avg+'g';
