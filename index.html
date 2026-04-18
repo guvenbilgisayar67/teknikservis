@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1923">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ServisTrack Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0f14;--surface:#111820;--surface2:#192130;--border:#1e2d3d;--accent:#00d4ff;--accent2:#ff6b35;--text:#e8f0f8;--text2:#7a99b8;--text3:#3d5a72;--red:#ff4d6d;--yellow:#ffd166;--green:#06d6a0;--radius:16px;--safe-bottom:env(safe-area-inset-bottom,0px);}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+  #app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;}
+
+  /* SETUP SCREEN */
+  #setupScreen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+  .setup-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:32px;margin-bottom:8px;}
+  .setup-logo span{color:var(--accent);}
+  .setup-sub{font-size:14px;color:var(--text2);margin-bottom:32px;text-align:center;}
+  .setup-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:420px;}
+  .setup-step{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start;}
+  .step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#0a0f14;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .step-text{font-size:13px;color:var(--text2);line-height:1.6;}
+  .step-text strong{color:var(--text);}
+  .step-text a{color:var(--accent);text-decoration:none;}
+  .setup-divider{height:1px;background:var(--border);margin:20px 0;}
+  .setup-input-wrap{margin-bottom:16px;}
+  .setup-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:block;}
+  .setup-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none;}
+  .setup-input:focus{border-color:var(--accent);}
+  .setup-input::placeholder{color:var(--text3);}
+  .setup-btn{width:100%;background:linear-gradient(135deg,var(--accent),#0099cc);border:none;border-radius:14px;padding:14px;color:#0a0f14;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all 0.2s;}
+  .setup-btn:active{transform:scale(0.98);}
+  .setup-note{font-size:11px;color:var(--text3);text-align:center;margin-top:12px;line-height:1.5;}
+
+  /* LOADING */
+  #loadingOverlay{position:fixed;inset:0;background:rgba(10,15,20,0.85);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(4px);}
+  #loadingOverlay.show{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:13px;color:var(--text2);}
+
+  /* HEADER */
+  .header{background:var(--surface);padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;}
+  .logo span{color:var(--accent);}
+  .cloud-badge{font-size:10px;color:var(--green);font-family:'DM Mono',monospace;background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);border-radius:6px;padding:2px 7px;margin-left:6px;}
+  .header-actions{display:flex;gap:8px;}
+  .icon-btn{width:38px;height:38px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.2s;}
+  .icon-btn:active{transform:scale(0.92);}
+  .stats-row{display:flex;gap:8px;}
+  .stat-chip{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center;}
+  .stat-chip .num{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;line-height:1;}
+  .stat-chip .lbl{font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
+  .stat-chip.act .num{color:var(--accent);}
+  .stat-chip.warn .num{color:var(--yellow);}
+  .stat-chip.done .num{color:var(--green);}
+
+  /* TABS */
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 12px;}
+  .tab{flex:1;padding:12px 4px;text-align:center;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab .ti{font-size:16px;}
+
+  /* CONTENT */
+  .content{flex:1;overflow-y:auto;padding:16px;padding-bottom:calc(80px + var(--safe-bottom));}
+  .content::-webkit-scrollbar{display:none;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .search-bar{display:flex;gap:8px;margin-bottom:16px;}
+  .search-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;}
+  .search-input:focus{border-color:var(--accent);}
+  .search-input::placeholder{color:var(--text3);}
+  .fsel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px;color:var(--text2);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;font-size:13px;}
+  .fsel option{background:var(--surface2);}
+
+  .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+  .cbadge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;}
+
+  /* CARD */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+  .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+  .card.bekliyor::before{background:var(--yellow);}
+  .card.tamiridevam::before{background:var(--accent);}
+  .card.hazir::before{background:var(--green);}
+  .card.teslim::before{background:var(--text3);}
+  .card:active{transform:scale(0.98);background:var(--surface2);}
+  .card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+  .card-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);background:rgba(0,212,255,0.08);border-radius:6px;padding:3px 8px;}
+  .sbadge{font-size:10px;font-weight:600;border-radius:6px;padding:3px 8px;text-transform:uppercase;letter-spacing:0.5px;}
+  .sbadge.bekliyor{background:rgba(255,209,102,0.15);color:var(--yellow);}
+  .sbadge.tamiridevam{background:rgba(0,212,255,0.15);color:var(--accent);}
+  .sbadge.hazir{background:rgba(6,214,160,0.15);color:var(--green);}
+  .sbadge.teslim{background:rgba(61,90,114,0.3);color:var(--text3);}
+  .card-name{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:3px;}
+  .card-device{font-size:13px;color:var(--text2);margin-bottom:8px;}
+  .card-meta{display:flex;gap:8px;flex-wrap:wrap;}
+  .meta-tag{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;}
+  .card-footer{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .card-price{font-family:'DM Mono',monospace;font-weight:500;font-size:15px;color:var(--accent2);}
+  .card-date{font-size:11px;color:var(--text3);}
+  .pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .pdot.yuksek{background:var(--red);box-shadow:0 0 6px var(--red);}
+  .pdot.orta{background:var(--yellow);}
+  .pdot.dusuk{background:var(--green);}
+
+  /* FAB */
+  .fab{position:fixed;bottom:calc(76px + var(--safe-bottom));right:20px;width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,var(--accent),#0099cc);box-shadow:0 8px 24px rgba(0,212,255,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;z-index:20;border:none;color:white;transition:all 0.2s;}
+  .fab:active{transform:scale(0.9);}
+
+  /* BOTTOM NAV */
+  .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 calc(8px + var(--safe-bottom));z-index:20;}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;cursor:pointer;font-size:10px;color:var(--text3);transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;}
+  .nav-item.active{color:var(--accent);}
+  .nav-item .ni{font-size:20px;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(4px);}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:480px;margin:0 auto;max-height:90dvh;overflow-y:auto;border:1px solid var(--border);border-bottom:none;animation:slideUp 0.3s cubic-bezier(0.32,0.72,0,1);}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .mhandle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+  .modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:20px;}
+  .fg{margin-bottom:14px;}
+  .fl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;}
+  .fi,.fs,.fta{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;appearance:none;}
+  .fi:focus,.fs:focus,.fta:focus{border-color:var(--accent);}
+  .fta{resize:none;height:90px;}
+  .fs option{background:var(--surface2);}
+  .frow{display:flex;gap:10px;}
+  .frow .fg{flex:1;}
+  .btn-p{width:100%;background:linear-gradient(135deg,var(--accent),#0099cc);border:none;border-radius:14px;padding:14px;color:#0a0f14;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px;transition:all 0.2s;}
+  .btn-p:active{transform:scale(0.98);}
+  .btn-sec{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+
+  /* DETAIL */
+  .dsec{margin-bottom:20px;}
+  .dsec-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .drow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border);}
+  .drow:last-child{border-bottom:none;}
+  .dkey{font-size:13px;color:var(--text2);}
+  .dval{font-size:13px;font-weight:500;text-align:right;max-width:60%;}
+  .sacts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .sab{flex:1;min-width:calc(50% - 4px);padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.2s;}
+  .sab:active{transform:scale(0.95);}
+  .sab.danger{border-color:var(--red);color:var(--red);}
+
+  /* DASHBOARD */
+  .dg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .dc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .dc .di{font-size:28px;margin-bottom:8px;}
+  .dc .dn{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;}
+  .dc .dl{font-size:12px;color:var(--text2);margin-top:2px;}
+  .dc.full{grid-column:1/-1;}
+  .ai{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+  .ai:last-child{border-bottom:none;}
+  .adot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+
+  /* CUSTOMERS */
+  .cc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+  .cav{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#0a0f14;flex-shrink:0;}
+
+  /* SETTINGS */
+  .sg{margin-bottom:20px;}
+  .sg-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:4px;}
+  .si{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:6px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all 0.2s;}
+  .si:active{background:var(--surface2);}
+
+  /* EMPTY */
+  .es{text-align:center;padding:60px 20px;color:var(--text3);}
+  .es .ei{font-size:48px;margin-bottom:12px;}
+  .es .et{font-family:'Syne',sans-serif;font-size:16px;color:var(--text2);margin-bottom:6px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--accent);border-radius:12px;padding:10px 20px;font-size:13px;color:var(--accent);z-index:300;opacity:0;transition:all 0.3s;white-space:nowrap;font-weight:500;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .hl{background:rgba(0,212,255,0.2);border-radius:3px;color:var(--accent);}
+
+  /* SYNC INDICATOR */
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;}
+  .sync-dot.syncing{background:var(--yellow);animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+</style>
+</head>
+<body>
+
+<!-- SETUP EKRANI -->
+<div id="setupScreen">
+  <div class="setup-logo">Servis<span>Track</span></div>
+  <div class="setup-sub">Google Sheets ile kalıcı bulut depolama</div>
+  <div class="setup-card">
+    <div class="setup-step">
+      <div class="step-num">1</div>
+      <div class="step-text">
+        <strong>script.google.com</strong> adresine git, <strong>"Yeni Proje"</strong> oluştur.<br>
+        Google hesabınla giriş yap.
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">2</div>
+      <div class="step-text">
+        <strong>google-apps-script.js</strong> dosyasındaki kodu editöre yapıştır. <strong>Kaydet</strong> (💾).
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">3</div>
+      <div class="step-text">
+        <strong>Dağıt → Yeni Dağıtım</strong> → Tür: <strong>Web Uygulaması</strong><br>
+        "Erişim: Herkes" seç → <strong>Dağıt</strong> → İzin ver.
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">4</div>
+      <div class="step-text">
+        Çıkan <strong>Web Uygulaması URL</strong>'ini aşağıya yapıştır.
+      </div>
+    </div>
+    <div class="setup-divider"></div>
+    <div class="setup-input-wrap">
+      <label class="setup-label">Web Uygulaması URL</label>
+      <input class="setup-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <button class="setup-btn" onclick="connectSheet()">🔗 Bağlan ve Başla</button>
+    <div class="setup-note">Veriler Google Sheets'te saklanır. Hiçbir zaman kaybolmaz.</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Yükleniyor...</div>
+</div>
+
+<!-- ANA UYGULAMA -->
+<div id="mainApp" style="display:none;flex-direction:column;height:100dvh;">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">
+        Servis<span>Track</span>
+        <span class="cloud-badge"><span class="sync-dot" id="syncDot"></span>Sheets</span>
+      </div>
+      <div class="header-actions">
+        <div class="icon-btn" onclick="loadData(true)" title="Yenile">🔄</div>
+        <div class="icon-btn" onclick="openSettings()" title="Ayarlar">⚙️</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-chip"><div class="num" id="st-total">0</div><div class="lbl">Toplam</div></div>
+      <div class="stat-chip act"><div class="num" id="st-act">0</div><div class="lbl">Aktif</div></div>
+      <div class="stat-chip warn"><div class="num" id="st-wait">0</div><div class="lbl">Bekliyor</div></div>
+      <div class="stat-chip done"><div class="num" id="st-ready">0</div><div class="lbl">Hazır</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="sw('isler')" id="tab-isler"><span class="ti">🔧</span>İşler</div>
+    <div class="tab" onclick="sw('musteriler')" id="tab-musteriler"><span class="ti">👥</span>Müşteriler</div>
+    <div class="tab" onclick="sw('panel')" id="tab-panel"><span class="ti">📊</span>Panel</div>
+  </div>
+
+  <div class="content">
+    <div class="screen active" id="screen-isler">
+      <div class="search-bar">
+        <input class="search-input" id="mainSearch" placeholder="İsim, cihaz veya ID ara..." oninput="filterCards()">
+        <select class="fsel" id="sfilt" onchange="filterCards()">
+          <option value="">Tümü</option>
+          <option value="bekliyor">Bekliyor</option>
+          <option value="tamiridevam">Tamirde</option>
+          <option value="hazir">Hazır</option>
+          <option value="teslim">Teslim</option>
+        </select>
+      </div>
+      <div class="section-title">Servis Kayıtları <span class="cbadge" id="cardCount">0</span></div>
+      <div id="cardList"></div>
+    </div>
+
+    <div class="screen" id="screen-musteriler">
+      <div class="search-bar">
+        <input class="search-input" id="custSearch" placeholder="Müşteri ara..." oninput="filterCust()">
+      </div>
+      <div class="section-title">Müşteri Listesi <span class="cbadge" id="custCount">0</span></div>
+      <div id="custList"></div>
+    </div>
+
+    <div class="screen" id="screen-panel">
+      <div class="section-title">Genel Bakış</div>
+      <div class="dg">
+        <div class="dc"><div class="di">📋</div><div class="dn" id="d-total" style="color:var(--text)">0</div><div class="dl">Toplam İş</div></div>
+        <div class="dc"><div class="di">⚙️</div><div class="dn" id="d-act" style="color:var(--accent)">0</div><div class="dl">Aktif</div></div>
+        <div class="dc"><div class="di">✅</div><div class="dn" id="d-done" style="color:var(--green)">0</div><div class="dl">Tamamlanan</div></div>
+        <div class="dc"><div class="di">💰</div><div class="dn" id="d-rev" style="color:var(--accent2)">₺0</div><div class="dl">Toplam Gelir</div></div>
+        <div class="dc full">
+          <div class="di">📈</div>
+          <div style="display:flex;gap:16px;align-items:center;">
+            <div><div class="dn" id="d-avg" style="color:var(--yellow);font-size:22px">0g</div><div class="dl">Ort. Tamamlanma</div></div>
+            <div style="flex:1;background:var(--surface2);border-radius:8px;overflow:hidden;height:8px;">
+              <div id="d-prog" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width 0.5s;border-radius:8px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section-title">Son Aktiviteler</div>
+      <div id="recentAct"></div>
+    </div>
+  </div>
+
+  <button class="fab" onclick="openNew()">＋</button>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="sw('isler')" id="nav-isler"><span class="ni">🔧</span>İşler</div>
+    <div class="nav-item" onclick="sw('musteriler')" id="nav-musteriler"><span class="ni">👥</span>Müşteriler</div>
+    <div class="nav-item" onclick="sw('panel')" id="nav-panel"><span class="ni">📊</span>Panel</div>
+  </div>
+</div>
+
+<!-- YENİ/DÜZENLE MODAL -->
+<div class="modal-overlay" id="mNew">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="modal-title" id="mTitle">Yeni Servis Kaydı</div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Müşteri Adı *</label><input class="fi" id="fName" placeholder="Ad Soyad"></div>
+      <div class="fg"><label class="fl">Telefon</label><input class="fi" id="fPhone" placeholder="05xx..." type="tel"></div>
+    </div>
+    <div class="fg"><label class="fl">Cihaz Türü *</label><input class="fi" id="fDevice" placeholder="iPhone 15, Samsung TV..."></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Seri / IMEI</label><input class="fi" id="fSerial" placeholder="Opsiyonel"></div>
+      <div class="fg"><label class="fl">Pin / Parola</label><input class="fi" id="fPin" placeholder="Opsiyonel"></div>
+    </div>
+    <div class="fg"><label class="fl">Arıza Açıklaması *</label><textarea class="fta" id="fDesc" placeholder="Arıza detayını yazın..."></textarea></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Ücret (₺)</label><input class="fi" id="fPrice" placeholder="0.00" type="number"></div>
+      <div class="fg"><label class="fl">Öncelik</label>
+        <select class="fs" id="fPriority">
+          <option value="orta">🟡 Orta</option>
+          <option value="yuksek">🔴 Yüksek</option>
+          <option value="dusuk">🟢 Düşük</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Durum</label>
+      <select class="fs" id="fStatus">
+        <option value="bekliyor">Bekliyor</option>
+        <option value="tamiridevam">Tamirde</option>
+        <option value="hazir">Hazır</option>
+        <option value="teslim">Teslim Edildi</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">İç Notlar</label><textarea class="fta" id="fNotes" placeholder="Parça bilgisi, özel notlar..."></textarea></div>
+    <button class="btn-p" id="saveBtn" onclick="saveRec()">💾 Kaydet</button>
+    <button class="btn-p btn-sec" onclick="closeM('mNew')" style="margin-top:8px;">İptal</button>
+  </div>
+</div>
+
+<!-- DETAY MODAL -->
+<div class="modal-overlay" id="mDetail">
+  <div class="modal"><div id="detailContent"></div></div>
+</div>
+
+<!-- AYARLAR MODAL -->
+<div class="modal-overlay" id="mSettings">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="modal-title">Ayarlar</div>
+    <div class="sg">
+      <div class="sg-t">Bağlantı</div>
+      <div class="si">
+        <span style="font-size:20px;">🔗</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;">Script URL</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace;word-break:break-all;" id="currentUrl">—</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-top:10px;">
+        <label class="fl">URL Değiştir</label>
+        <input class="fi" id="newUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <button class="btn-p" onclick="changeUrl()" style="margin-top:0;">Güncelle</button>
+    </div>
+    <div class="sg">
+      <div class="sg-t">Diğer</div>
+      <div class="si" onclick="loadData(true)"><span style="font-size:20px;">🔄</span><span style="flex:1;font-size:14px;">Verileri Yenile</span></div>
+      <div class="si" onclick="resetSetup()"><span style="font-size:20px;color:var(--red)">🔌</span><span style="flex:1;font-size:14px;color:var(--red)">Bağlantıyı Sıfırla</span></div>
+    </div>
+    <button class="btn-p btn-sec" onclick="closeM('mSettings')" style="margin-top:0;">Kapat</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SL={bekliyor:'Bekliyor',tamiridevam:'Tamirde',hazir:'Hazır',teslim:'Teslim'};
+const PL={yuksek:'🔴 Yüksek',orta:'🟡 Orta',dusuk:'🟢 Düşük'};
+const genId=()=>'SRV'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase();
+const dStr=ts=>ts?new Date(Number(ts)).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const dDiff=ts=>ts?Math.floor((Date.now()-Number(ts))/86400000):0;
+
+let recs=[], editId=null, SCRIPT_URL='';
+
+// ===== API =====
+function setSyncState(state){
+  const d=document.getElementById('syncDot');
+  if(!d)return;
+  d.className='sync-dot'+(state==='syncing'?' syncing':state==='error'?' error':'');
+}
+
+async function api(params){
+  setSyncState('syncing');
+  const url=new URL(SCRIPT_URL);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  if(params.action==='getAll'){
+    try{
+      const r=await fetch(url.toString());
+      const data=await r.json();
+      setSyncState('ok');
+      return data;
+    }catch(e){ setSyncState('error'); throw e; }
+  } else {
+    fetch(url.toString(),{mode:'no-cors'}).catch(()=>{});
+    setSyncState('ok');
+    return {success:true};
+  }
+}
+
+// ===== CONNECT =====
+async function connectSheet(){
+  const url=document.getElementById('scriptUrl').value.trim();
+  if(!url.includes('script.google.com')){toast('⚠️ Geçerli bir Script URL gir');return;}
+  SCRIPT_URL=url;
+  showLoading('Bağlanıyor...');
+  try{
+    const res=await api({action:'getAll'});
+    if(res.records!==undefined){
+      localStorage.setItem('st_url',SCRIPT_URL);
+      recs=res.records;
+      document.getElementById('setupScreen').style.display='none';
+      document.getElementById('mainApp').style.display='flex';
+      hideLoading();
+      filterCards();upStats();
+      toast('✅ Bağlandı! '+recs.length+' kayıt yüklendi');
+    } else {
+      hideLoading();toast('❌ Bağlantı hatası: '+JSON.stringify(res));
+    }
+  }catch(e){hideLoading();toast('❌ Bağlantı başarısız. URL\'i kontrol et.');}
+}
+
+async function loadData(showMsg=false){
+  if(!SCRIPT_URL)return;
+  if(showMsg)showLoading('Yenileniyor...');
+  try{
+    const res=await api({action:'getAll'});
+    if(res.records){
+      recs=res.records;
+      filterCards();upStats();
+      if(document.getElementById('screen-musteriler').classList.contains('active'))renderCust();
+      if(showMsg){hideLoading();toast('🔄 '+recs.length+' kayıt güncellendi');}
+    }
+  }catch(e){if(showMsg){hideLoading();toast('❌ Yenileme hatası');}}
+  if(showMsg)hideLoading();
+}
+
+// ===== STATS =====
+function upStats(){
+  const n=recs.length,act=recs.filter(r=>r.status==='tamiridevam').length,wait=recs.filter(r=>r.status==='bekliyor').length,rdy=recs.filter(r=>r.status==='hazir').length,done=recs.filter(r=>r.status==='teslim').length;
+  document.getElementById('st-total').textContent=n;
+  document.getElementById('st-act').textContent=act;
+  document.getElementById('st-wait').textContent=wait;
+  document.getElementById('st-ready').textContent=rdy;
+  document.getElementById('d-total').textContent=n;
+  document.getElementById('d-act').textContent=act+wait;
+  document.getElementById('d-done').textContent=done;
+  const rev=recs.filter(r=>r.status==='teslim').reduce((s,r)=>s+(parseFloat(r.price)||0),0);
+  document.getElementById('d-rev').textContent='₺'+rev.toLocaleString('tr-TR');
+  const comp=recs.filter(r=>r.status==='teslim'&&r.completedAt);
+  const avg=comp.length?Math.round(comp.reduce((s,r)=>s+dDiff(r.createdAt),0)/comp.length):0;
+  document.getElementById('d-avg').textContent=avg+'g';
+  document.getElementById('d-prog').style.width=(n?(done/n*100):0)+'%';
+  const col={bekliyor:'var(--yellow)',tamiridevam:'var(--accent)',hazir:'var(--green)',teslim:'var(--text3)'};
+  const sorted=[...recs].sort((a,b)=>Number(b.updatedAt)-Number(a.updatedAt)).slice(0,6);
+  document.getElementById('recentAct').innerHTML=sorted.length?sorted.map(r=>`
+    <div class="ai"><div class="adot" style="background:${col[r.status]}"></div>
+    <div><div style="font-size:13px;font-weight:500;">${r.name} — ${r.device}</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:2px;">${SL[r.status]} · ${dStr(r.updatedAt)}</div></div></div>`).join('')
+    :'<div class="es"><div class="ei">📭</div><div class="et">Henüz kayıt yok</div></div>';
+}
+
+// ===== CARDS =====
+function renderCards(list,q=''){
+  document.getElementById('cardCount').textContent=list.length;
+  const c=document.getElementById('cardList');
+  if(!list.length){c.innerHTML='<div class="es"><div class="ei">🔧</div><div class="et">Kayıt bulunamadı</div><div style="font-size:13px;color:var(--text3);">+ ile yeni kayıt ekleyin</div></div>';return;}
+  const hl=t=>q?String(t).replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<span class="hl">${m}</span>`):t;
+  const sorted=[...list].sort((a,b)=>Number(b.updatedAt)-Number(a.updatedAt));
+  c.innerHTML=sorted.map(r=>`
+    <div class="card ${r.status}" onclick="openDetail('${r.id}')">
+      <div class="card-header"><div class="card-id">#${String(r.id).slice(-7)}</div><div class="sbadge ${r.status}">${SL[r.status]}</div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;"><div class="pdot ${r.priority||'orta'}"></div><div class="card-name">${hl(r.name)}</div></div>
+      <div class="card-device">📱 ${hl(r.device)}</div>
+      <div class="card-meta">
+        ${r.phone?`<div class="meta-tag">📞 ${r.phone}</div>`:''}
+        <div class="meta-tag">⏱ ${dDiff(r.createdAt)}g</div>
+        <div class="meta-tag">${PL[r.priority||'orta']}</div>
+      </div>
+      ${r.desc?`<div style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.4;">${String(r.desc).substring(0,80)}${String(r.desc).length>80?'…':''}</div>`:''}
+      <div class="card-footer"><div class="card-price">${r.price?'₺'+parseFloat(r.price).toLocaleString('tr-TR'):'—'}</div><div class="card-date">${dStr(r.createdAt)}</div></div>
+    </div>`).join('');
+}
+
+function filterCards(){
+  const q=document.getElementById('mainSearch').value.toLowerCase().trim();
+  const st=document.getElementById('sfilt').value;
+  let list=[...recs];
+  if(q)list=list.filter(r=>String(r.name).toLowerCase().includes(q)||String(r.device).toLowerCase().includes(q)||String(r.id).toLowerCase().includes(q));
+  if(st)list=list.filter(r=>r.status===st);
+  renderCards(list,q);
+}
+
+// ===== CUSTOMERS =====
+function renderCust(sq=''){
+  const map={};
+  recs.forEach(r=>{const k=r.phone||r.name;if(!map[k])map[k]={name:r.name,phone:r.phone,count:0};map[k].count++;});
+  let custs=Object.values(map);
+  if(sq)custs=custs.filter(c=>c.name.toLowerCase().includes(sq)||(c.phone||'').includes(sq));
+  document.getElementById('custCount').textContent=custs.length;
+  const c=document.getElementById('custList');
+  if(!custs.length){c.innerHTML='<div class="es"><div class="ei">👥</div><div class="et">Müşteri bulunamadı</div></div>';return;}
+  c.innerHTML=custs.sort((a,b)=>b.count-a.count).map(c=>`
+    <div class="cc">
+      <div class="cav">${c.name[0].toUpperCase()}</div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">${c.name}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">${c.phone||'Telefon yok'}</div>
+        <div style="font-size:11px;color:var(--accent);margin-top:3px;">📋 ${c.count} kayıt</div>
+      </div>
+    </div>`).join('');
+}
+function filterCust(){renderCust(document.getElementById('custSearch').value.toLowerCase().trim());}
+
+// ===== TABS =====
+function sw(tab){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab,.nav-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  if(tab==='musteriler')renderCust();
+  if(tab==='panel')upStats();
+  if(tab==='isler')filterCards();
+}
+
+// ===== MODALS =====
+function openNew(){
+  editId=null;
+  document.getElementById('mTitle').textContent='Yeni Servis Kaydı';
+  document.getElementById('saveBtn').textContent='☁️ Kaydet';
+  ['fName','fPhone','fDevice','fSerial','fPin','fDesc','fPrice','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fPriority').value='orta';
+  document.getElementById('fStatus').value='bekliyor';
+  openM('mNew');
+}
+function openEdit(id){
+  const r=recs.find(x=>x.id===id);if(!r)return;
+  closeM('mDetail');editId=id;
+  document.getElementById('mTitle').textContent='Kaydı Düzenle';
+  document.getElementById('saveBtn').textContent='☁️ Güncelle';
+  document.getElementById('fName').value=r.name;
+  document.getElementById('fPhone').value=r.phone||'';
+  document.getElementById('fDevice').value=r.device;
+  document.getElementById('fSerial').value=r.serial||'';
+  document.getElementById('fPin').value=r.pin||'';
+  document.getElementById('fDesc').value=r.desc||'';
+  document.getElementById('fPrice').value=r.price||'';
+  document.getElementById('fNotes').value=r.notes||'';
+  document.getElementById('fPriority').value=r.priority||'orta';
+  document.getElementById('fStatus').value=r.status;
+  openM('mNew');
+}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function openSettings(){
+  document.getElementById('currentUrl').textContent=SCRIPT_URL;
+  document.getElementById('newUrl').value='';
+  openM('mSettings');
+}
+
+// ===== SAVE =====
+async function saveRec(){
+  const name=document.getElementById('fName').value.trim();
+  const device=document.getElementById('fDevice').value.trim();
+  if(!name||!device){toast('⚠️ Ad ve cihaz zorunlu!');return;}
+  closeM('mNew');
+  const now=Date.now();
+  let rec;
+  if(editId){
+    rec={...recs.find(r=>r.id===editId)};
+    Object.assign(rec,{name,phone:document.getElementById('fPhone').value.trim(),device,serial:document.getElementById('fSerial').value.trim(),pin:document.getElementById('fPin').value.trim(),desc:document.getElementById('fDesc').value.trim(),price:document.getElementById('fPrice').value,notes:document.getElementById('fNotes').value.trim(),priority:document.getElementById('fPriority').value,status:document.getElementById('fStatus').value,updatedAt:now});
+    if(rec.status==='teslim'&&!rec.completedAt)rec.completedAt=now;
+    const idx=recs.findIndex(r=>r.id===editId);
+    if(idx>=0)recs[idx]=rec;
+  } else {
+    rec={id:genId(),name,phone:document.getElementById('fPhone').value.trim(),device,serial:document.getElementById('fSerial').value.trim(),pin:document.getElementById('fPin').value.trim(),desc:document.getElementById('fDesc').value.trim(),price:document.getElementById('fPrice').value,notes:document.getElementById('fNotes').value.trim(),priority:document.getElementById('fPriority').value,status:document.getElementById('fStatus').value,createdAt:now,updatedAt:now,completedAt:''};
+    recs.unshift(rec);
+  }
+  // Hemen ekrana yansıt
+  filterCards();upStats();
+  toast(editId?'✅ Kayıt güncellendi':'✅ Yeni kayıt oluşturuldu');
+  // Arkaplanda Sheets'e gönder
+  api({action:'save',data:JSON.stringify(rec)}).catch(()=>{});
+}
+
+// ===== DETAIL =====
+function openDetail(id){
+  const r=recs.find(x=>x.id===id);if(!r)return;
+  const sc={bekliyor:['var(--yellow)','rgba(255,209,102,0.1)'],tamiridevam:['var(--accent)','rgba(0,212,255,0.1)'],hazir:['var(--green)','rgba(6,214,160,0.1)'],teslim:['var(--text3)','rgba(61,90,114,0.1)']};
+  const[c,bg]=sc[r.status]||sc['bekliyor'];
+  document.getElementById('detailContent').innerHTML=`
+    <div class="mhandle"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="width:48px;height:48px;border-radius:14px;background:${bg};border:1px solid ${c};display:flex;align-items:center;justify-content:center;font-size:22px;">🔧</div>
+      <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">${r.name}</div><div style="font-size:12px;color:var(--text2);">${r.device}</div></div>
+      <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);background:rgba(0,212,255,0.1);border-radius:6px;padding:4px 10px;">#${String(r.id).slice(-7)}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+      <div class="sbadge ${r.status}" style="font-size:12px;padding:6px 12px;">${SL[r.status]}</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;">${PL[r.priority||'orta']}</div>
+      ${r.price?`<div style="background:rgba(255,107,53,0.1);border:1px solid var(--accent2);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--accent2);">₺${parseFloat(r.price).toLocaleString('tr-TR')}</div>`:''}
+    </div>
+    <div class="dsec">
+      <div class="dsec-t">Müşteri Bilgileri</div>
+      <div class="drow"><span class="dkey">Ad Soyad</span><span class="dval">${r.name}</span></div>
+      ${r.phone?`<div class="drow"><span class="dkey">Telefon</span><span class="dval"><a href="tel:${r.phone}" style="color:var(--accent);text-decoration:none;">${r.phone}</a></span></div>`:''}
+    </div>
+    <div class="dsec">
+      <div class="dsec-t">Cihaz Bilgileri</div>
+      <div class="drow"><span class="dkey">Cihaz</span><span class="dval">${r.device}</span></div>
+      ${r.serial?`<div class="drow"><span class="dkey">Seri/IMEI</span><span class="dval" style="font-family:'DM Mono',monospace;font-size:12px;">${r.serial}</span></div>`:''}
+      ${r.pin?`<div class="drow"><span class="dkey">Pin/Parola</span><span class="dval">${r.pin}</span></div>`:''}
+    </div>
+    ${r.desc?`<div class="dsec"><div class="dsec-t">Arıza Açıklaması</div><div style="font-size:13px;line-height:1.6;background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);">${r.desc}</div></div>`:''}
+    ${r.notes?`<div class="dsec"><div class="dsec-t">İç Notlar</div><div style="font-size:13px;color:var(--text2);line-height:1.6;background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);">${r.notes}</div></div>`:''}
+    <div class="dsec">
+      <div class="dsec-t">Tarihler</div>
+      <div class="drow"><span class="dkey">Alındı</span><span class="dval">${dStr(r.createdAt)}</span></div>
+      <div class="drow"><span class="dkey">Güncellendi</span><span class="dval">${dStr(r.updatedAt)}</span></div>
+      <div class="drow"><span class="dkey">Bekleme</span><span class="dval">${dDiff(r.createdAt)} gün</span></div>
+    </div>
+    <div class="dsec-t" style="margin-bottom:10px;">Durum Güncelle</div>
+    <div class="sacts">
+      <button class="sab" onclick="chStatus('${r.id}','bekliyor')" style="${r.status==='bekliyor'?'border-color:var(--yellow);color:var(--yellow);':''}">⏳ Bekliyor</button>
+      <button class="sab" onclick="chStatus('${r.id}','tamiridevam')" style="${r.status==='tamiridevam'?'border-color:var(--accent);color:var(--accent);':''}">⚙️ Tamirde</button>
+      <button class="sab" onclick="chStatus('${r.id}','hazir')" style="${r.status==='hazir'?'border-color:var(--green);color:var(--green);':''}">✅ Hazır</button>
+      <button class="sab" onclick="chStatus('${r.id}','teslim')" style="${r.status==='teslim'?'border-color:var(--text2);color:var(--text2);':''}">📦 Teslim</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="sab" onclick="openEdit('${r.id}')" style="border-color:var(--accent);color:var(--accent);">✏️ Düzenle</button>
+      <button class="sab danger" onclick="delRec('${r.id}')">🗑️ Sil</button>
+    </div>
+    <button class="btn-p btn-sec" onclick="closeM('mDetail')" style="margin-top:12px;">Kapat</button>
+  `;
+  openM('mDetail');
+}
+
+async function chStatus(id,status){
+  const r=recs.find(x=>x.id===id);if(!r)return;
+  closeM('mDetail');
+  const now=Date.now();
+  const updated={...r,status,updatedAt:now};
+  if(status==='teslim'&&!r.completedAt)updated.completedAt=now;
+  const idx=recs.findIndex(x=>x.id===id);
+  if(idx>=0)recs[idx]=updated;
+  filterCards();upStats();
+  toast('✅ Durum: '+SL[status]);
+  api({action:'save',data:JSON.stringify(updated)}).catch(()=>{});
+}
+
+async function delRec(id){
+  if(!confirm('Bu kaydı silmek istediğinizden emin misiniz?'))return;
+  closeM('mDetail');
+  recs=recs.filter(r=>r.id!==id);
+  filterCards();upStats();
+  toast('🗑️ Kayıt silindi');
+  api({action:'delete',id}).catch(()=>{});
+}
+
+// ===== SETTINGS =====
+function changeUrl(){
+  const u=document.getElementById('newUrl').value.trim();
+  if(!u.includes('script.google.com')){toast('⚠️ Geçerli URL gir');return;}
+  SCRIPT_URL=u;
+  localStorage.setItem('st_url',u);
+  document.getElementById('currentUrl').textContent=u;
+  loadData(true);
+  closeM('mSettings');
+  toast('✅ URL güncellendi');
+}
+function resetSetup(){
+  if(!confirm('Bağlantıyı sıfırlamak istediğinizden emin misiniz?'))return;
+  localStorage.removeItem('st_url');
+  location.reload();
+}
+
+// ===== LOADING =====
+function showLoading(msg='Yükleniyor...'){
+  document.getElementById('loadingText').textContent=msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading(){document.getElementById('loadingOverlay').classList.remove('show');}
+
+// ===== TOAST =====
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
+});
+
+// ===== INIT =====
+const DEFAULT_URL='https://script.google.com/macros/s/AKfycbz9DWwt8j0NhDUzD4p52ua0mW3GwlJbsJgFAKc_G6wqmov-ZdqQKK1x7FEKCip_kbo4/exec';
+const savedUrl=localStorage.getItem('st_url')||DEFAULT_URL;
+if(savedUrl){
+  SCRIPT_URL=savedUrl;
+  localStorage.setItem('st_url',savedUrl);
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('mainApp').style.display='flex';
+  loadData(false).then(()=>{filterCards();upStats();});
+}
+</script>
+</body>
+</html>
