@@ -369,6 +369,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
+<!-- TESLİM MODAL -->
+<div class="mo" id="mTeslim">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <div class="mtitle">📦 Teslim Ediliyor</div>
+    <div class="fg">
+      <label class="fl">Teslim Eden Kişi</label>
+      <input class="fi" id="teslimEden" placeholder="Teslim eden personel adı...">
+    </div>
+    <div class="fg">
+      <label class="fl">Teslim Notu (Opsiyonel)</label>
+      <input class="fi" id="teslimNot" placeholder="Ör: Ücret alındı, garanti verildi...">
+    </div>
+    <button class="btnp" onclick="confirmTeslim()" style="background:linear-gradient(135deg,#06d6a0,#00a878);">📦 Teslim Et</button>
+    <button class="btnp btns" onclick="closeM('mTeslim')" style="margin-top:7px;">İptal</button>
+  </div>
+</div>
+
 <!-- NOT EKLE MODAL -->
 <div class="mo" id="mNote">
   <div class="modal">
@@ -426,7 +444,7 @@ function fromDB(r){
   let photos=[]; try{photos=typeof r.photos==='string'?JSON.parse(r.photos):(r.photos||[]);}catch(e){}
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
     desc:r.description||'',price:r.price||'',priority:r.priority||'orta',status:r.status||'bekliyor',
-    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos,tamirci:r.tamirci||''};
+    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos,tamirci:r.tamirci||'',teslimEden:r.teslim_eden||''};
 }
 function toDB(r){
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
@@ -434,7 +452,8 @@ function toDB(r){
     notes:r.notes||'',created_at:r.createdAt,updated_at:r.updatedAt,completed_at:r.completedAt||null,
     gecmis:JSON.stringify(r.gecmis||[]),
     photos:JSON.stringify(r.photos||[]),
-    tamirci:r.tamirci||''};
+    tamirci:r.tamirci||'',
+    teslim_eden:r.teslimEden||''};
 }
 
 // GEÇMİŞ KAYDI
@@ -696,6 +715,7 @@ function openDetail(id){
       ${r.serial?`<div class="dr"><span class="dk">Seri/IMEI</span><span class="dv" style="font-family:'DM Mono',monospace;font-size:11px;">${r.serial}</span></div>`:''}
       ${r.pin?`<div class="dr"><span class="dk">Pin/Parola</span><span class="dv">${r.pin}</span></div>`:''}
       ${r.tamirci?`<div class="dr"><span class="dk">🔧 Tamiri Yapan</span><span class="dv" style="color:var(--accent);font-weight:700;">${r.tamirci}</span></div>`:''}
+      ${r.teslimEden?`<div class="dr"><span class="dk">📦 Teslim Eden</span><span class="dv" style="color:var(--green);font-weight:700;">${r.teslimEden}</span></div>`:''}
     </div>
 
     ${r.desc?`<div class="dsec"><div class="dst">Arıza Açıklaması</div><div style="font-size:12px;line-height:1.6;background:var(--surface2);border-radius:9px;padding:11px;border:1px solid var(--border);">${r.desc}</div></div>`:''}
@@ -753,6 +773,16 @@ async function chStatus(id,status){
     openM('mTamir');
     return;
   }
+  // Teslim ediliyorsa teslim eden kişi sor
+  if(status==='teslim'){
+    _pendingStatusId=id;
+    _pendingStatus=status;
+    closeM('mDetail');
+    document.getElementById('teslimEden').value='';
+    document.getElementById('teslimNot').value='';
+    openM('mTeslim');
+    return;
+  }
   await applyStatus(id,status,'');
 }
 
@@ -763,14 +793,26 @@ async function confirmTamir(){
   await applyStatus(_pendingStatusId,_pendingStatus,tamirci);
 }
 
-async function applyStatus(id,status,tamirci){
+async function confirmTeslim(){
+  const teslimEden=document.getElementById('teslimEden').value.trim();
+  const teslimNot=document.getElementById('teslimNot').value.trim();
+  if(!teslimEden){toast('⚠️ Teslim eden kişi zorunlu!');return;}
+  closeM('mTeslim');
+  await applyStatus(_pendingStatusId,_pendingStatus,'',teslimEden,teslimNot);
+}
+
+async function applyStatus(id,status,tamirci,teslimEden='',teslimNot=''){
   const r=recs.find(x=>x.id===id);if(!r)return;
   showLoading('Durum güncelleniyor...');
   const now=Date.now();
   const updated={...r,status,updatedAt:now,gecmis:[...(r.gecmis||[])]};
   if(status==='teslim'&&!r.completedAt)updated.completedAt=now;
   if(tamirci) updated.tamirci=tamirci;
-  const desc=tamirci?statusAciklama(status)+' — Teknisyen: '+tamirci:statusAciklama(status);
+  if(teslimEden) updated.teslimEden=teslimEden;
+  let desc=statusAciklama(status);
+  if(tamirci) desc+=' — Teknisyen: '+tamirci;
+  if(teslimEden) desc+=' — Teslim Eden: '+teslimEden;
+  if(teslimNot) desc+=' ('+teslimNot+')';
   addHistory(updated,'durum',desc,r.status);
   try{
     await sbUpsert(toDB(updated));
