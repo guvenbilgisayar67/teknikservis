@@ -308,9 +308,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div class="mhdl"></div>
     <div class="mtitle" id="mTitle">Yeni Servis Kaydı</div>
     <div class="frow">
-      <div class="fg"><label class="fl">Müşteri Adı *</label><input class="fi" id="fName" placeholder="Ad Soyad"></div>
-      <div class="fg"><label class="fl">Telefon</label><input class="fi" id="fPhone" placeholder="05xx..." type="tel"></div>
+      <div class="fg"><label class="fl">Adı *</label><input class="fi" id="fName" placeholder="Ad"></div>
+      <div class="fg"><label class="fl">Soyadı *</label><input class="fi" id="fSurname" placeholder="Soyad"></div>
     </div>
+    <div class="fg"><label class="fl">Telefon</label><input class="fi" id="fPhone" placeholder="05xx..." type="tel"></div>
     <div class="fg"><label class="fl">Cihaz *</label><input class="fi" id="fDevice" placeholder="iPhone 15, Samsung TV..."></div>
     <div class="frow">
       <div class="fg"><label class="fl">Seri / IMEI</label><input class="fi" id="fSerial" placeholder="Opsiyonel"></div>
@@ -529,7 +530,7 @@ function openNew(){
   editId=null;
   document.getElementById('mTitle').textContent='Yeni Servis Kaydı';
   document.getElementById('saveBtn').textContent='💾 Kaydet';
-  ['fName','fPhone','fDevice','fSerial','fPin','fDesc','fPrice','fNotes'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fSurname','fPhone','fDevice','fSerial','fPin','fDesc','fPrice','fNotes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fPriority').value='orta';
   document.getElementById('fStatus').value='bekliyor';
   openM('mNew');
@@ -539,7 +540,9 @@ function openEdit(id){
   closeM('mDetail');editId=id;
   document.getElementById('mTitle').textContent='Kaydı Düzenle';
   document.getElementById('saveBtn').textContent='✏️ Güncelle';
-  document.getElementById('fName').value=r.name;
+  const nameParts=r.name.split(' ');
+  document.getElementById('fName').value=nameParts[0]||'';
+  document.getElementById('fSurname').value=nameParts.slice(1).join(' ')||'';
   document.getElementById('fPhone').value=r.phone||'';
   document.getElementById('fDevice').value=r.device;
   document.getElementById('fSerial').value=r.serial||'';
@@ -555,9 +558,11 @@ function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 
 async function saveRec(){
-  const name=document.getElementById('fName').value.trim();
+  const fname=document.getElementById('fName').value.trim();
+  const lname=document.getElementById('fSurname').value.trim();
+  const name=(fname+' '+lname).trim();
   const device=document.getElementById('fDevice').value.trim();
-  if(!name||!device){toast('⚠️ Ad ve cihaz zorunlu!');return;}
+  if(!fname||!device){toast('⚠️ Ad ve cihaz zorunlu!');return;}
   closeM('mNew');showLoading('Kaydediliyor...');
   const now=Date.now();
   const newStatus=document.getElementById('fStatus').value;
