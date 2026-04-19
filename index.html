@@ -191,6 +191,81 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   #fisEkrani { position: fixed !important; inset: 0 !important; background: white !important; z-index: 9999 !important; padding: 0 !important; }
   .fis-kapat { display: none !important; }
 }
+
+/* ===== RESPONSIVE ===== */
+
+/* Tablet (768px+) */
+@media (min-width: 768px) {
+  #app { max-width: 100%; flex-direction: row; }
+  .sidebar-logo { display: block !important; }
+  
+  /* Sol sidebar nav */
+  .tabs { display: none; }
+  .bnav { 
+    position: fixed; left: 0; top: 0; bottom: 0; 
+    width: 200px; flex-direction: column; 
+    border-top: none; border-right: 1px solid var(--border);
+    padding: 20px 10px calc(10px + var(--safe-bottom));
+    justify-content: flex-start; gap: 4px;
+    transform: none; max-width: 200px;
+  }
+  .ni { 
+    flex-direction: row; justify-content: flex-start;
+    padding: 12px 16px; border-radius: 12px; font-size: 13px;
+    gap: 10px; text-transform: none; letter-spacing: 0;
+  }
+  .ni .ico { font-size: 20px; }
+  .ni.active { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); }
+
+  /* Ana içerik sidebar'ın yanında */
+  #mainApp { flex-direction: row !important; }
+  .header { 
+    position: fixed; left: 200px; right: 0; top: 0; z-index: 10;
+  }
+  #mainApp > .tabs { display: none; }
+  .content { 
+    margin-left: 200px; 
+    margin-top: 115px;
+    padding: 20px 24px;
+    padding-bottom: 20px;
+  }
+  .fab { right: 30px; bottom: 30px; width: 60px; height: 60px; border-radius: 20px; font-size: 28px; }
+
+  /* Kartlar 2 kolon */
+  #cardList { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  #cardList .card { margin-bottom: 0; }
+
+  /* Modal tam ekran değil, ortada */
+  .mo { align-items: center; justify-content: center; }
+  .modal { 
+    border-radius: 20px; max-height: 85dvh; 
+    max-width: 560px; border: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+
+  /* Dashboard grid daha geniş */
+  .dg { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .dg .dc.full { grid-column: 1/-1; }
+
+  /* Login ekranı */
+  #loginScreen { background: radial-gradient(ellipse at center, #111820 0%, var(--bg) 70%); }
+}
+
+/* Desktop (1200px+) */
+@media (min-width: 1200px) {
+  .bnav { width: 220px; max-width: 220px; }
+  .header { left: 220px !important; }
+  .content { margin-left: 220px !important; }
+  #cardList { grid-template-columns: 1fr 1fr 1fr; }
+  .modal { max-width: 620px; }
+}
+
+/* Geniş ekranda fiş */
+@media (min-width: 768px) {
+  #fisEkrani { align-items: center; justify-content: center; }
+  #fisEkrani > div { max-width: 600px; width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -317,6 +392,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <button class="fab" onclick="openNew()">＋</button>
 
   <div class="bnav">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;padding:12px 16px 20px;border-bottom:1px solid var(--border);margin-bottom:8px;display:none;" class="sidebar-logo">GÜVEN<span style="color:var(--accent);">BİLGİSAYAR</span></div>
     <div class="ni active" onclick="sw('isler')" id="nav-isler"><span class="ico">🔧</span>İşler</div>
     <div class="ni" onclick="sw('musteriler')" id="nav-musteriler"><span class="ico">👥</span>Müşteriler</div>
     <div class="ni" onclick="sw('panel')" id="nav-panel"><span class="ico">📊</span>Panel</div>
