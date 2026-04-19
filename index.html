@@ -74,6 +74,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .card.tamiridevam::before{background:var(--accent);}
 .card.hazir::before{background:var(--green);}
 .card.teslim::before{background:var(--text3);}
+  .card.iade::before{background:var(--red);}
+  .sbadge.iade{background:rgba(255,77,109,0.15);color:var(--red);}
 .card:active{transform:scale(0.98);background:var(--surface2);}
 .card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px;}
 .cid{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);background:rgba(0,212,255,0.08);border-radius:5px;padding:2px 7px;}
@@ -264,6 +266,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
           <option value="tamiridevam">Tamirde</option>
           <option value="hazir">Hazır</option>
           <option value="teslim">Teslim</option>
+          <option value="iade">İade</option>
         </select>
       </div>
       <div class="stitle">Servis Kayıtları <span class="nbadge" id="cardCount">0</span></div>
@@ -378,6 +381,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
         <option value="tamiridevam">⚙️ Tamirde</option>
         <option value="hazir">✅ Hazır</option>
         <option value="teslim">📦 Teslim Edildi</option>
+        <option value="iade">↩️ İade</option>
       </select>
     </div>
     <div class="fg"><label class="fl">İç Notlar</label><textarea class="fta" id="fNotes" placeholder="Parça bilgisi, özel notlar..."></textarea></div>
@@ -420,6 +424,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </div>
     <button class="btnp" onclick="confirmTeslim()" style="background:linear-gradient(135deg,#06d6a0,#00a878);">📦 Teslim Et</button>
     <button class="btnp btns" onclick="closeM('mTeslim')" style="margin-top:7px;">İptal</button>
+  </div>
+</div>
+
+<!-- İADE MODAL -->
+<div class="mo" id="mIade">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <div class="mtitle">↩️ İade Ediliyor</div>
+    <div class="fg">
+      <label class="fl">İadeyi Kim Verdi</label>
+      <input class="fi" id="iadeVeren" placeholder="Personel adı...">
+    </div>
+    <div class="fg">
+      <label class="fl">İade Sebebi *</label>
+      <textarea class="fta" id="iadeSebebi" placeholder="Müşteri neden iade aldı? Tamir yapılmadı, fiyat anlaşmazlığı..."></textarea>
+    </div>
+    <div class="fg">
+      <label class="fl">İade Ücreti Alındı mı?</label>
+      <select class="fs" id="iadeUcret">
+        <option value="hayir">Hayır — Ücret alınmadı</option>
+        <option value="muayene">Muayene ücreti alındı</option>
+        <option value="kısmi">Kısmi ücret alındı</option>
+      </select>
+    </div>
+    <button class="btnp" onclick="confirmIade()" style="background:linear-gradient(135deg,var(--red),#cc0033);">↩️ İadeyi Onayla</button>
+    <button class="btnp btns" onclick="closeM('mIade')" style="margin-top:7px;">İptal</button>
   </div>
 </div>
 
@@ -470,8 +500,8 @@ async function sbDel(id){
 
 // STATE
 let recs=[],editId=null,noteRecId=null;
-const SL={bekliyor:'Bekliyor',tamiridevam:'Tamirde',hazir:'Hazır',teslim:'Teslim'};
-const SI={bekliyor:'⏳',tamiridevam:'⚙️',hazir:'✅',teslim:'📦'};
+const SL={bekliyor:'Bekliyor',tamiridevam:'Tamirde',hazir:'Hazır',teslim:'Teslim',iade:'İade'};
+const SI={bekliyor:'⏳',tamiridevam:'⚙️',hazir:'✅',teslim:'📦',iade:'↩️'};
 const PL={yuksek:'🔴 Yüksek',orta:'🟡 Orta',dusuk:'🟢 Düşük'};
 const genId=()=>'SRV'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase();
 
@@ -491,7 +521,7 @@ function fromDB(r){
   let photos=[]; try{photos=typeof r.photos==='string'?JSON.parse(r.photos):(r.photos||[]);}catch(e){}
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
     desc:r.description||'',price:r.price||'',priority:r.priority||'orta',status:r.status||'bekliyor',
-    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos,tamirci:r.tamirci||'',teslimEden:r.teslim_eden||''};
+    notes:r.notes||'',createdAt:r.created_at,updatedAt:r.updated_at,completedAt:r.completed_at,gecmis,photos,tamirci:r.tamirci||'',teslimEden:r.teslim_eden||'',iadeVeren:r.iade_veren||'',iadeSebebi:r.iade_sebebi||'',iadeUcret:r.iade_ucret||''};
 }
 function toDB(r){
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
@@ -500,7 +530,10 @@ function toDB(r){
     gecmis:JSON.stringify(r.gecmis||[]),
     photos:JSON.stringify(r.photos||[]),
     tamirci:r.tamirci||'',
-    teslim_eden:r.teslimEden||''};
+    teslim_eden:r.teslimEden||'',
+    iade_veren:r.iadeVeren||'',
+    iade_sebebi:r.iadeSebebi||'',
+    iade_ucret:r.iadeUcret||''};
 }
 
 // GEÇMİŞ KAYDI
@@ -704,7 +737,7 @@ async function saveRec(){
 }
 
 function statusAciklama(status){
-  const m={bekliyor:'Müşteriden teslim alındı, tamir bekleniyor',tamiridevam:'Cihaz tamire alındı, çalışma başladı',hazir:'Tamir tamamlandı, müşteri bilgilendirilmeli',teslim:'Cihaz müşteriye teslim edildi'};
+  const m={bekliyor:'Müşteriden teslim alındı, tamir bekleniyor',tamiridevam:'Cihaz tamire alındı, çalışma başladı',hazir:'Tamir tamamlandı, müşteri bilgilendirilmeli',teslim:'Cihaz müşteriye teslim edildi',iade:'Cihaz müşteriye iade edildi'};
   return m[status]||status;
 }
 
@@ -763,6 +796,9 @@ function openDetail(id){
       ${r.pin?`<div class="dr"><span class="dk">Pin/Parola</span><span class="dv">${r.pin}</span></div>`:''}
       ${r.tamirci?`<div class="dr"><span class="dk">🔧 Tamiri Yapan</span><span class="dv" style="color:var(--accent);font-weight:700;">${r.tamirci}</span></div>`:''}
       ${r.teslimEden?`<div class="dr"><span class="dk">📦 Teslim Eden</span><span class="dv" style="color:var(--green);font-weight:700;">${r.teslimEden}</span></div>`:''}
+      ${r.iadeSebebi?`<div class="dr"><span class="dk">↩️ İade Sebebi</span><span class="dv" style="color:var(--red);">${r.iadeSebebi}</span></div>`:''}
+      ${r.iadeVeren?`<div class="dr"><span class="dk">↩️ İadeyi Veren</span><span class="dv" style="color:var(--red);font-weight:700;">${r.iadeVeren}</span></div>`:''}
+      ${r.iadeUcret&&r.iadeUcret!=='hayir'?`<div class="dr"><span class="dk">💰 İade Ücreti</span><span class="dv">${r.iadeUcret==='muayene'?'Muayene ücreti alındı':'Kısmi ücret alındı'}</span></div>`:''}
     </div>
 
     ${r.desc?`<div class="dsec"><div class="dst">Arıza Açıklaması</div><div style="font-size:12px;line-height:1.6;background:var(--surface2);border-radius:9px;padding:11px;border:1px solid var(--border);">${r.desc}</div></div>`:''}
@@ -794,6 +830,7 @@ function openDetail(id){
       <button class="sab" onclick="chStatus('${r.id}','tamiridevam')" style="${r.status==='tamiridevam'?'border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.08);':''}">⚙️ Tamirde</button>
       <button class="sab" onclick="chStatus('${r.id}','hazir')" style="${r.status==='hazir'?'border-color:var(--green);color:var(--green);background:rgba(6,214,160,0.08);':''}">✅ Hazır</button>
       <button class="sab" onclick="chStatus('${r.id}','teslim')" style="${r.status==='teslim'?'border-color:var(--text2);color:var(--text2);':''}">📦 Teslim</button>
+      <button class="sab" onclick="chStatus('${r.id}','iade')" style="${r.status==='iade'?'border-color:var(--red);color:var(--red);background:rgba(255,77,109,0.08);':'border-color:var(--red);color:var(--red);'}">↩️ İade</button>
     </div>
 
     <div style="display:flex;gap:7px;margin-bottom:7px;">
@@ -821,6 +858,17 @@ async function chStatus(id,status){
     openM('mTamir');
     return;
   }
+  // İade ediliyorsa iade bilgisi al
+  if(status==='iade'){
+    _pendingStatusId=id;
+    _pendingStatus=status;
+    closeM('mDetail');
+    document.getElementById('iadeVeren').value='';
+    document.getElementById('iadeSebebi').value='';
+    document.getElementById('iadeUcret').value='hayir';
+    openM('mIade');
+    return;
+  }
   // Teslim ediliyorsa teslim eden kişi sor
   if(status==='teslim'){
     _pendingStatusId=id;
@@ -841,6 +889,17 @@ async function confirmTamir(){
   await applyStatus(_pendingStatusId,_pendingStatus,tamirci);
 }
 
+async function confirmIade(){
+  const iadeVeren = document.getElementById('iadeVeren').value.trim();
+  const iadeSebebi = document.getElementById('iadeSebebi').value.trim();
+  const iadeUcret = document.getElementById('iadeUcret').value;
+  if(!iadeSebebi){toast('⚠️ İade sebebi zorunlu!');return;}
+  closeM('mIade');
+  const ucretMap = {hayir:'Ücret alınmadı', muayene:'Muayene ücreti alındı', kismi:'Kısmi ücret alındı'};
+  const extra = (iadeVeren?'İadeyi Veren: '+iadeVeren+' — ':'') + 'Sebep: '+iadeSebebi+' — '+ucretMap[iadeUcret];
+  await applyStatus(_pendingStatusId, _pendingStatus, '', '', '', iadeVeren, iadeSebebi, iadeUcret);
+}
+
 async function confirmTeslim(){
   const teslimEden=document.getElementById('teslimEden').value.trim();
   const teslimNot=document.getElementById('teslimNot').value.trim();
@@ -849,7 +908,7 @@ async function confirmTeslim(){
   await applyStatus(_pendingStatusId,_pendingStatus,'',teslimEden,teslimNot);
 }
 
-async function applyStatus(id,status,tamirci,teslimEden='',teslimNot=''){
+async function applyStatus(id,status,tamirci,teslimEden='',teslimNot='',iadeVeren='',iadeSebebi='',iadeUcret=''){
   const r=recs.find(x=>x.id===id);if(!r)return;
   showLoading('Durum güncelleniyor...');
   const now=Date.now();
@@ -857,10 +916,15 @@ async function applyStatus(id,status,tamirci,teslimEden='',teslimNot=''){
   if(status==='teslim'&&!r.completedAt)updated.completedAt=now;
   if(tamirci) updated.tamirci=tamirci;
   if(teslimEden) updated.teslimEden=teslimEden;
+  if(iadeVeren) updated.iadeVeren=iadeVeren;
+  if(iadeSebebi) updated.iadeSebebi=iadeSebebi;
+  if(iadeUcret) updated.iadeUcret=iadeUcret;
   let desc=statusAciklama(status);
   if(tamirci) desc+=' — Teknisyen: '+tamirci;
   if(teslimEden) desc+=' — Teslim Eden: '+teslimEden;
   if(teslimNot) desc+=' ('+teslimNot+')';
+  if(iadeVeren) desc+=' — İadeyi Veren: '+iadeVeren;
+  if(iadeSebebi) desc+=' — Sebep: '+iadeSebebi;
   addHistory(updated,'durum',desc,r.status);
   try{
     await sbUpsert(toDB(updated));
