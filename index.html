@@ -609,7 +609,7 @@ function fromDB(r){
 }
 function toDB(r){
   return{id:r.id,name:r.name,phone:r.phone||'',device:r.device,serial:r.serial||'',pin:r.pin||'',
-    description:r.desc||'',price:r.price||'',priority:r.priority||'orta',status:r.status,
+    description:r.desc||'',price:(r.price===''||r.price===null||r.price===undefined)?null:r.price,priority:r.priority||'orta',status:r.status,
     notes:r.notes||'',created_at:r.createdAt,updated_at:r.updatedAt,completed_at:r.completedAt||null,
     gecmis:JSON.stringify(r.gecmis||[]),
     photos:JSON.stringify(r.photos||[]),
