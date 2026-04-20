@@ -1108,7 +1108,7 @@ async function uploadPhotos(recId, files){
     const path = `${recId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const r = await fetch(`${SUPA_URL}/storage/v1/object/cihaz-fotograflari/${path}`,{
       method:'POST',
-      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(currentSession?.access_token||SUPA_KEY),'Content-Type':file.type},
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(SUPA_KEY),'Content-Type':file.type},
       body:file
     });
     if(r.ok){
@@ -1124,7 +1124,7 @@ async function deletePhoto(url, recId){
   const path = url.split('cihaz-fotograflari/')[1];
   await fetch(`${SUPA_URL}/storage/v1/object/cihaz-fotograflari/${path}`,{
     method:'DELETE',
-    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(currentSession?.access_token||SUPA_KEY)}
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+(SUPA_KEY)}
   });
   r.photos = (r.photos||[]).filter(u=>u!==url);
   await sbUpsert({...toDB(r), photos: JSON.stringify(r.photos)});
