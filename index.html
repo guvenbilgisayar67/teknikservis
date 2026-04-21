@@ -442,7 +442,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </div>
     <div class="fg"><label class="fl">Arıza Açıklaması *</label><textarea class="fta" id="fDesc" placeholder="Arıza detayını yazın..."></textarea></div>
     <div class="frow">
-      <div class="fg"><label class="fl">Ücret (₺)</label><input class="fi" id="fPrice" placeholder="0.00" type="number"></div>
+      <div class="fg"><label class="fl">Ücret (₺)</label><input class="fi" id="fPrice" placeholder="2000" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"></div>
       <div class="fg"><label class="fl">Öncelik</label>
         <select class="fs" id="fPriority">
           <option value="orta">🟡 Orta</option>
@@ -784,7 +784,7 @@ async function saveRec(){
     const oldStatus=rec.status;
     Object.assign(rec,{name,phone:document.getElementById('fPhone').value.trim(),device,
       serial:document.getElementById('fSerial').value.trim(),pin:document.getElementById('fPin').value.trim(),
-      desc:document.getElementById('fDesc').value.trim(),price:document.getElementById('fPrice').value,
+      desc:document.getElementById('fDesc').value.trim(),price:document.getElementById('fPrice').value.replace(',','.').trim(),
       notes:document.getElementById('fNotes').value.trim(),priority:document.getElementById('fPriority').value,
       status:newStatus,updatedAt:now});
     if(newStatus==='teslim'&&!rec.completedAt)rec.completedAt=now;
@@ -794,7 +794,7 @@ async function saveRec(){
   } else {
     rec={id:genId(),name,phone:document.getElementById('fPhone').value.trim(),device,
       serial:document.getElementById('fSerial').value.trim(),pin:document.getElementById('fPin').value.trim(),
-      desc:document.getElementById('fDesc').value.trim(),price:document.getElementById('fPrice').value,
+      desc:document.getElementById('fDesc').value.trim(),price:document.getElementById('fPrice').value.replace(',','.').trim(),
       notes:document.getElementById('fNotes').value.trim(),priority:document.getElementById('fPriority').value,
       status:newStatus,createdAt:now,updatedAt:now,completedAt:null,gecmis:[]};
     addHistory(rec,'olusturuldu','Servis kaydı oluşturuldu',device);
