@@ -554,7 +554,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div id="fisIcerik" style="background:white;padding:24px;font-family:Arial,sans-serif;font-size:13px;color:#000;"></div>
     <div style="display:flex;gap:10px;margin-top:12px;">
       <button class="fis-kapat" onclick="document.getElementById('fisEkrani').style.display='none'" style="flex:1;padding:12px;background:#333;color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;">✕ Kapat</button>
-      <button class="fis-kapat" onclick="window.print()" style="flex:2;padding:12px;background:#000;color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;">🖨️ Yazdır</button>
+      <button class="fis-kapat" onclick="kozenYazdir()" style="flex:2;padding:12px;background:#000;color:white;border:none;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer;">🖨️ Yazdır</button>
     </div>
   </div>
 </div>
@@ -1301,6 +1301,36 @@ function toggleRakamlar(){
     }
   });
 }
+
+// ===== KOZEN P8 DAHILI YAZICI =====
+// Uygulama icinde acildiysa fisi Kozen'in termal yazicisina gonderir.
+// Chrome'da acildiysa eskisi gibi normal yazdirma penceresini acar.
+function kozenYazdir(){
+  const el = document.getElementById('fisIcerik');
+  if(!el) return;
+
+  // Uygulama yoksa (Chrome, bilgisayar) eski davranis
+  if(typeof AndroidPrinter === 'undefined'){ window.print(); return; }
+  if(!AndroidPrinter.isReady()){
+    alert('Cihazda yazici servisi bulunamadi.');
+    return;
+  }
+
+  // HTML fisi duz metne cevir; tablo hucreleri "Etiket: Deger" olsun
+  const metin = el.innerText
+    .replace(/[\t]+/g, ': ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ ]{2,}/g, ' ')
+    .trim();
+
+  AndroidPrinter.print(metin);
+}
+
+// Yazdirma sonucu (APK otomatik cagirir)
+window.onPrintResult = function(ok, hata){
+  if(!ok) alert('Yazdirilamadi: ' + hata);
+  else document.getElementById('fisEkrani').style.display = 'none';
+};
 
 // ===== YAZDIR =====
 function yazdir(id){
